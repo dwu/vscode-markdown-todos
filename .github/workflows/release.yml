@@ -1,0 +1,29 @@
+name: Release
+
+permissions:
+  contents: write
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout sources
+      uses: actions/checkout@v4
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+    - name: Install dependencies
+      run: npm install
+    - name: Package plugin
+      run: npx vsce package
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          markdown-todos-*.vsix

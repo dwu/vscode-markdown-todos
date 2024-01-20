@@ -1,0 +1,107 @@
+{
+  "name": "markdown-todos",
+  "displayName": "markdown-todos",
+  "description": "Collects to-do items in MarkDown files to an Explorer tree view with contextual menues for toggling and removing to-do items and keeps the tree view up-to-date as to-do items are inserted, updated and deleted in any MarkDown file in the workspace.",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "workspaceContains:**/*.md",
+    "onLanguage:markdown"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "markdown-todos.focus",
+        "title": "Markdown To-Do: Focus"
+      },
+      {
+        "command": "markdown-todos.refresh",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "markdown-todos.toggleTicked",
+        "title": "Toggle ✓ display",
+        "icon": "$(filter)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "markdown-todos",
+          "title": "MarkDown To-Do",
+          "icon": "icons/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "explorer": [
+        {
+          "id": "markdown-todos-explorer",
+          "name": "MarkDown To-Dos"
+        }
+      ],
+      "markdown-todos": [
+        {
+          "id": "markdown-todos-view-container",
+          "name": "MarkDown To-Dos"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "group": "navigation",
+          "command": "markdown-todos.toggleTicked",
+          "when": "view == markdown-todos-view-container || view == markdown-todos-explorer"
+        },
+        {
+          "group": "navigation",
+          "command": "markdown-todos.refresh",
+          "when": "view == markdown-todos-view-container || view == markdown-todos-explorer"
+        }
+      ]
+    },
+    "configuration": [
+      {
+        "title": "markdown-todos",
+        "properties": {}
+      }
+    ]
+  },
+  "repository": {
+    "url": "https://github.com/dwu/vscode-markdown-todos.git"
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.6",
+    "@types/node": "18.x",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "@vscode/test-cli": "^0.0.4",
+    "@vscode/test-electron": "^2.3.8",
+    "@vscode/vsce": "^2.22.0",
+    "eslint": "^8.56.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.3.3",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
+  }
+}
