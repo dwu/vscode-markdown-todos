@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.1.0
+
+- Add markdown checkbox highlighting (green/red)
+
 ## 0.0.1
 
 - Use default icons instead of custom icons
