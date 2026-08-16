@@ -15,6 +15,35 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "grammars": [
+      {
+        "path": "./syntaxes/markdown-todos.json",
+        "scopeName": "markdown-todos.checkbox",
+        "injectTo": [
+          "text.html.markdown"
+        ]
+      }
+    ],
+    "configurationDefaults": {
+      "editor.tokenColorCustomizations": {
+        "textMateRules": [
+          {
+            "scope": "markup.taskList.checked.markdown",
+            "settings": {
+              "foreground": "#4CAF50",
+              "fontStyle": "bold"
+            }
+          },
+          {
+            "scope": "markup.taskList.unchecked.markdown",
+            "settings": {
+              "foreground": "#F44336",
+              "fontStyle": "bold"
+            }
+          }
+        ]
+      }
+    },
     "commands": [
       {
         "command": "markdown-todos.focus",
