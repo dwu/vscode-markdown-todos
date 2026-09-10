@@ -2,6 +2,7 @@
 import { ExtensionContext, window, workspace, Uri, TreeDataProvider, TreeItem, TextDocument, EventEmitter, TreeItemCollapsibleState, ThemeIcon, commands, Selection, RelativePattern, FileSystemWatcher, TextEditorRevealType } from 'vscode';
 import * as path from 'path';
 import { removeFileFromCache } from './cache';
+import { createMarkdownSearchScopes, sortFilePaths } from './indexing';
 
 const FileType: 'file' = 'file';
 type File = { type: typeof FileType; path: string; headlessTodos: Todo[]; heads: Head[]; };
@@ -166,19 +167,17 @@ class TodoTreeDataProvider implements TreeDataProvider<Item> {
     }
 
     private async index() {
-        // TODO: https://github.com/Microsoft/vscode/issues/48674
-        const excludes = await workspace.getConfiguration('search', null).get('exclude')! as any;
-        const globs = Object.keys(excludes).map(exclude => new RelativePattern(workspace.workspaceFolders![0], exclude));
-        const occurences: { [fsPath: string]: number; } = {};
-        for (const glob of globs) {
-            // TODO: https://github.com/Microsoft/vscode/issues/47645
-            for (const file of await workspace.findFiles('**/*.md', glob)) {
-                occurences[file.fsPath] = (occurences[file.fsPath] || 0) + 1;
-            }
-        }
-
-        // Accept only files not excluded in any of the globs
-        const files = Object.keys(occurences).filter(fsPath => occurences[fsPath] === globs.length).sort((a, b) => treeFilename(a).localeCompare(treeFilename(b)));
+        const workspaceRoots = (workspace.workspaceFolders ?? []).map(folder => ({ path: folder.uri.fsPath }));
+        const scopes = createMarkdownSearchScopes(
+            workspaceRoots,
+            rootPath => workspace.getConfiguration('search', Uri.file(rootPath)).get<unknown>('exclude')
+        );
+        const filesByScope = await Promise.all(scopes.map(scope => {
+            const include = new RelativePattern(Uri.file(scope.rootPath), '**/*.md');
+            const exclude = scope.exclude === undefined ? undefined : new RelativePattern(Uri.file(scope.rootPath), scope.exclude);
+            return workspace.findFiles(include, exclude);
+        }));
+        const files = sortFilePaths(filesByScope.flat().map(file => file.fsPath));
         for (const file of files) {
             const textDocument = await workspace.openTextDocument(Uri.file(file));
             this.refresh(textDocument);
