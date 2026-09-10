@@ -1,6 +1,7 @@
 'use strict';
 import { ExtensionContext, window, workspace, Uri, TreeDataProvider, TreeItem, TextDocument, EventEmitter, TreeItemCollapsibleState, ThemeIcon, commands, Selection, RelativePattern, FileSystemWatcher, TextEditorRevealType } from 'vscode';
 import * as path from 'path';
+import { removeFileFromCache } from './cache';
 
 const FileType: 'file' = 'file';
 type File = { type: typeof FileType; path: string; headlessTodos: Todo[]; heads: Head[]; };
@@ -61,9 +62,9 @@ class TodoTreeDataProvider implements TreeDataProvider<Item> {
         });
 
         this.watcher.onDidDelete(uri => {
-            const index = this.cache.findIndex(file => file.path === uri.fsPath);
-            this.cache.splice(index, 1);
-            this._onDidChangeTreeData.fire(undefined);
+            if (removeFileFromCache(this.cache, uri.fsPath)) {
+                this._onDidChangeTreeData.fire(undefined);
+            }
         });
 
         this.index();
