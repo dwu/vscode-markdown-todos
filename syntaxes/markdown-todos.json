@@ -3,7 +3,7 @@
   "injectionSelector": "L:text.html.markdown",
   "patterns": [
     {
-      "match": "^\\s*-\\s+(\\[(?:x|X)\\])(?=\\s|$)",
+      "match": "^\\s*[-*+]\\s+(\\[(?:x|X)\\])(?=\\s|$)",
       "captures": {
         "1": {
           "name": "markup.taskList.checked.markdown"
@@ -11,7 +11,7 @@
       }
     },
     {
-      "match": "^\\s*-\\s+(\\[ \\])(?=\\s|$)",
+      "match": "^\\s*[-*+]\\s+(\\[ \\])(?=\\s|$)",
       "captures": {
         "1": {
           "name": "markup.taskList.unchecked.markdown"

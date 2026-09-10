@@ -4,6 +4,7 @@ import * as path from 'path';
 import { removeFileFromCache } from './cache';
 import { createMarkdownSearchScopes, sortFilePaths } from './indexing';
 import { SerialQueue } from './asyncQueue';
+import { parseMarkdownDocument } from './parser';
 
 const FileType: 'file' = 'file';
 type File = { type: typeof FileType; path: string; headlessTodos: Todo[]; heads: Head[]; };
@@ -227,33 +228,15 @@ class TodoTreeDataProvider implements TreeDataProvider<Item> {
     }
 
     private parseFile(textDocument: TextDocument): File | undefined {
+        const parsedDocument = parseMarkdownDocument(textDocument.getText());
         const file: File = { type: FileType, path: textDocument.uri.fsPath, headlessTodos: [], heads: [] };
-        for (let index = 0; index < textDocument.lineCount; index++) {
-            const line = textDocument.lineAt(index);
-
-            let match: RegExpMatchArray | null;
-            if (match = line.text.match(/^(#+) (.*)/)) {
-                // Line is a heading ==> push head to file.heads
-                const head: Head = { type: HeadType, text: match[2].trim(), line: line.lineNumber, todos: [], file };
-                file.heads.push(head);
-                continue;
-            }
-            if (match = line.text.match(/(\s*)[-*+] (\[.\]) (.*)/)) {
-                // Line is a todo, checked or unchecked ==> push todo to either the correct heading or to headlessTodos
-                let checked: boolean = false;
-                if (match[2] === "[x]" || match[2] === "[X]") {
-                    checked = true;
-                }
-                const todo: Todo = { type: TodoType, text: match[3].trim(), isChecked: checked, line: line.lineNumber, indent: match[1], file };
-                if (file.heads.length === 0) {
-                    file.headlessTodos.push(todo);
-                } else {
-                    file.heads[file.heads.length - 1].todos.push(todo);
-                }
-            }
-        }
-
-        file.heads = file.heads.filter(head => head.todos.length > 0);
+        file.headlessTodos = parsedDocument.headlessTodos.map(todo => ({ ...todo, type: TodoType, file }));
+        file.heads = parsedDocument.heads.map(head => ({
+            ...head,
+            type: HeadType,
+            file,
+            todos: head.todos.map(todo => ({ ...todo, type: TodoType, file }))
+        }));
 
         if (file.headlessTodos.length === 0 && file.heads.length === 0) {
             return undefined;
