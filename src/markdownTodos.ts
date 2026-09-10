@@ -5,6 +5,7 @@ import { removeFileFromCache } from './cache';
 import { createMarkdownSearchScopes, sortFilePaths } from './indexing';
 import { SerialQueue } from './asyncQueue';
 import { parseMarkdownDocument } from './parser';
+import { countTodos, visibleChildren, visibleFiles, visibleHeadTodos } from './treeItems';
 
 const FileType: 'file' = 'file';
 type File = { type: typeof FileType; path: string; headlessTodos: Todo[]; heads: Head[]; };
@@ -84,9 +85,9 @@ class TodoTreeDataProvider implements TreeDataProvider<Item> {
     public getTreeItem(element: Item) {
         switch (element.type) {
             case 'file': {
-                const headlessCounts = this.count(element.headlessTodos);
+                const headlessCounts = countTodos(element.headlessTodos);
                 const headfulCounts = element.heads.reduce((counts, head) => {
-                    const { checked, unchecked } = this.count(head.todos);
+                    const { checked, unchecked } = countTodos(head.todos);
                     return { checked: counts.checked + checked, unchecked: counts.unchecked + unchecked };
                 }, { checked: 0, unchecked: 0 });
                 const checked = headlessCounts.checked + headfulCounts.checked;
@@ -102,7 +103,7 @@ class TodoTreeDataProvider implements TreeDataProvider<Item> {
                 return item;
             }
             case 'head': {
-                const { checked, unchecked } = this.count(element.todos);
+                const { checked, unchecked } = countTodos(element.todos);
                 const total = checked + unchecked;
                 const done = checked === 0 ? '' : `${checked} done, `;
                 const item = new TreeItem(`${element.text} (${done}${unchecked} to do, ${total} total)`, TreeItemCollapsibleState.Expanded);
@@ -129,30 +130,15 @@ class TodoTreeDataProvider implements TreeDataProvider<Item> {
 
     public getChildren(element?: Item | undefined) {
         if (element === undefined) {
-            if (this.displayTicked) {
-                return this.cache as Item[];
-            } else {
-                return this.cache.filter(file => {
-                    const headlessCounts = this.count(file.headlessTodos);
-                    const headfulCounts = file.heads.reduce((counts, head) => {
-                        const { checked, unchecked } = this.count(head.todos);
-                        return { checked: counts.checked + checked, unchecked: counts.unchecked + unchecked };
-                    }, { checked: 0, unchecked: 0 });
-                    const unchecked = headlessCounts.unchecked + headfulCounts.unchecked;
-                    return unchecked > 0;
-                }) as Item[];
-            }
+            return visibleFiles(this.cache, this.displayTicked) as Item[];
         }
 
         if (element.type === 'file') {
-            return [
-                ...this.displayTicked ? element.headlessTodos : element.headlessTodos.filter(todo => !todo.isChecked),
-                ...this.displayTicked ? element.heads : element.heads.filter(head => head.todos.filter(todo => !todo.isChecked).length > 0)
-            ];
+            return visibleChildren(element, this.displayTicked);
         }
 
         if (element.type === 'head') {
-            return this._displayTicked ? element.todos : element.todos.filter(todo => !todo.isChecked);
+            return visibleHeadTodos(element.todos, this._displayTicked);
         }
 
         // Todos do not have children.
@@ -252,18 +238,6 @@ class TodoTreeDataProvider implements TreeDataProvider<Item> {
     private reportError(operation: string, error: unknown): void {
         const message = error instanceof Error ? error.message : String(error);
         this.outputChannel.appendLine(`${operation}: ${message}`);
-    }
-
-    private count(todos: Todo[]) {
-        return todos.reduce((counts, todo) => {
-            if (todo.isChecked) {
-                counts.checked++;
-            } else {
-                counts.unchecked++;
-            }
-
-            return counts;
-        }, { checked: 0, unchecked: 0 });
     }
 
     public dispose() {
