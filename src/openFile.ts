@@ -1,7 +1,7 @@
 'use strict';
 import { ExtensionContext, Uri, commands, window, workspace } from 'vscode';
-import { spawn } from 'child_process';
 import { getOpenFilePath as resolveOpenFilePath, isApplicationTemplate, parseApplicationTemplate, resolveConfiguredApplication } from './launcher';
+import { launchProcess } from './process';
 
 const applicationsConfiguration = 'markdown-todos.openInApplication';
 
@@ -83,29 +83,5 @@ function openWithApplication(filePath: string, application?: string): Promise<vo
         }
     }
 
-    return new Promise<void>((resolve, reject) => {
-        let stdout = '';
-        let stderr = '';
-        const opener = spawn(command, args, { detached: true, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
-        opener.stdout?.on('data', data => {
-            stdout += data.toString();
-        });
-        opener.stderr?.on('data', data => {
-            stderr += data.toString();
-        });
-        opener.once('error', reject);
-        opener.once('close', code => {
-            if (code === 0) {
-                resolve();
-            } else {
-                const output = [
-                    stdout.trim() === '' ? '' : `stdout:\n${stdout.trim()}`,
-                    stderr.trim() === '' ? '' : `stderr:\n${stderr.trim()}`
-                ].filter(Boolean).join('\n');
-                const details = output === '' ? '' : `\nCommand output:\n${output}`;
-                reject(new Error(`${command} exited with code ${code}${details}`));
-            }
-        });
-        opener.unref();
-    });
+    return launchProcess(command, args, application === undefined ? 'fire-and-forget' : 'diagnostic');
 }
