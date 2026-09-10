@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.2.0
+
+- Add a command to open files with their default application
+- Add configurable launchers by file extension and one-shot launcher selection
+- Support `%p` and `%f` path templates in launcher command strings
+
 ## 0.1.0
 
 - Add markdown checkbox highlighting (green/red)

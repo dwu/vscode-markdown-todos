@@ -2,7 +2,7 @@
   "name": "markdown-todos",
   "displayName": "markdown-todos",
   "description": "Collects to-do items in MarkDown files to an Explorer tree view with contextual menues for toggling and removing to-do items and keeps the tree view up-to-date as to-do items are inserted, updated and deleted in any MarkDown file in the workspace.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -58,6 +58,14 @@
         "command": "markdown-todos.toggleTicked",
         "title": "Toggle ✓ display",
         "icon": "$(filter)"
+      },
+      {
+        "command": "markdown-todos.openInApplication",
+        "title": "Open in external application"
+      },
+      {
+        "command": "markdown-todos.openWithApplication",
+        "title": "Open in external application..."
       }
     ],
     "viewsContainers": {
@@ -95,12 +103,53 @@
           "command": "markdown-todos.refresh",
           "when": "view == markdown-todos-view-container || view == markdown-todos-explorer"
         }
+      ],
+      "explorer/context": [
+        {
+          "command": "markdown-todos.openInApplication",
+          "group": "navigation"
+        },
+        {
+          "command": "markdown-todos.openWithApplication",
+          "group": "navigation@1"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "markdown-todos.openInApplication",
+          "group": "0"
+        },
+        {
+          "command": "markdown-todos.openWithApplication",
+          "group": "1"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "markdown-todos.openInApplication",
+          "group": "navigation",
+          "when": "(view == markdown-todos-view-container || view == markdown-todos-explorer) && viewItem == file"
+        },
+        {
+          "command": "markdown-todos.openWithApplication",
+          "group": "navigation@1",
+          "when": "(view == markdown-todos-view-container || view == markdown-todos-explorer) && viewItem == file"
+        }
       ]
     },
     "configuration": [
       {
         "title": "markdown-todos",
-        "properties": {}
+        "properties": {
+          "markdown-todos.openInApplication.applications": {
+            "type": "object",
+            "description": "Map file extensions to launcher command strings. Use %p for the parent folder, %f for the full file path, and * as the fallback.",
+            "default": {},
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
       }
     ]
   },
