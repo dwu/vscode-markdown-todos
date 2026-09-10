@@ -1,7 +1,7 @@
 {
   "name": "markdown-todos",
-  "displayName": "markdown-todos",
-  "description": "Collects to-do items in MarkDown files to an Explorer tree view with contextual menues for toggling and removing to-do items and keeps the tree view up-to-date as to-do items are inserted, updated and deleted in any MarkDown file in the workspace.",
+  "displayName": "Markdown To-Dos",
+  "description": "Collects Markdown task-list items in two VS Code tree views, keeps them updated as Markdown files change, and opens files with the operating system default or a configured external launcher.",
   "version": "0.2.0",
   "engines": {
     "vscode": "^1.85.0"
@@ -72,7 +72,7 @@
       "activitybar": [
         {
           "id": "markdown-todos",
-          "title": "MarkDown To-Do",
+          "title": "Markdown To-Do",
           "icon": "icons/icon.svg"
         }
       ]
@@ -81,13 +81,13 @@
       "explorer": [
         {
           "id": "markdown-todos-explorer",
-          "name": "MarkDown To-Dos"
+          "name": "Markdown To-Dos"
         }
       ],
       "markdown-todos": [
         {
           "id": "markdown-todos-view-container",
-          "name": "MarkDown To-Dos"
+          "name": "Markdown To-Dos"
         }
       ]
     },
@@ -139,7 +139,7 @@
     },
     "configuration": [
       {
-        "title": "markdown-todos",
+        "title": "Markdown To-Dos",
         "properties": {
           "markdown-todos.openInApplication.applications": {
             "type": "object",
