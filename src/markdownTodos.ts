@@ -1,6 +1,5 @@
 'use strict';
 import { ExtensionContext, window, workspace, Uri, TreeDataProvider, TreeItem, TextDocument, EventEmitter, TreeItemCollapsibleState, ThemeIcon, commands, Selection, RelativePattern, FileSystemWatcher, TextEditorRevealType } from 'vscode';
-import * as path from 'path';
 import { removeFileFromCache } from './cache';
 import { createMarkdownSearchScopes, sortFilePaths } from './indexing';
 import { SerialQueue } from './asyncQueue';
@@ -17,10 +16,6 @@ const TodoType: 'todo' = 'todo';
 type Todo = { type: typeof TodoType; text: string; isChecked: boolean; line: number; file: File; indent: string; };
 
 type Item = File | Head | Todo;
-
-function treeFilename(filepath: string): string {
-    return `${path.basename(path.dirname(filepath))}/${path.basename(filepath)}`;
-}
 
 export function registerMarkdownTodos(context: ExtensionContext): void {
     const todoTreeDataProvider = new TodoTreeDataProvider();
@@ -94,7 +89,7 @@ class TodoTreeDataProvider implements TreeDataProvider<Item> {
                 const unchecked = headlessCounts.unchecked + headfulCounts.unchecked;
                 const total = checked + unchecked;
                 const done = checked === 0 ? '' : `${checked} done, `;
-                const item = new TreeItem(`${treeFilename(element.path)} (${done}${unchecked} to do, ${total} total)`, TreeItemCollapsibleState.Expanded);
+                const item = new TreeItem(`${workspace.asRelativePath(Uri.file(element.path), true)} (${done}${unchecked} to do, ${total} total)`, TreeItemCollapsibleState.Expanded);
                 item.contextValue = 'file';
                 item.iconPath = ThemeIcon.Folder;
                 item.resourceUri = Uri.file(element.path);
