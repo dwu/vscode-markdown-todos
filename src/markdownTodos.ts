@@ -3,6 +3,7 @@ import { ExtensionContext, window, workspace, Uri, TreeDataProvider, TreeItem, T
 import * as path from 'path';
 import { removeFileFromCache } from './cache';
 import { createMarkdownSearchScopes, sortFilePaths } from './indexing';
+import { SerialQueue } from './asyncQueue';
 
 const FileType: 'file' = 'file';
 type File = { type: typeof FileType; path: string; headlessTodos: Todo[]; heads: Head[]; };
@@ -22,8 +23,8 @@ function treeFilename(filepath: string): string {
 export function registerMarkdownTodos(context: ExtensionContext): void {
     const todoTreeDataProvider = new TodoTreeDataProvider();
 
-    context.subscriptions.push(commands.registerCommand('markdown-todos.refresh', () => {
-        todoTreeDataProvider.reindex();
+    context.subscriptions.push(commands.registerCommand('markdown-todos.refresh', async () => {
+        await todoTreeDataProvider.reindex();
     }));
 
     context.subscriptions.push(commands.registerCommand('markdown-todos.toggleTicked', () => {
@@ -50,25 +51,33 @@ class TodoTreeDataProvider implements TreeDataProvider<Item> {
     public readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
     private readonly watcher: FileSystemWatcher;
+    private readonly operationQueue = new SerialQueue();
+    private readonly outputChannel = window.createOutputChannel('Markdown To-Dos');
 
     constructor() {
         this.watcher = workspace.createFileSystemWatcher('**/*.md');
 
-        this.watcher.onDidChange(async uri => {
-            this.refresh(await workspace.openTextDocument(uri));
+        this.watcher.onDidChange(uri => {
+            this.runSafely('Unable to refresh changed Markdown file', this.operationQueue.enqueue(async () => {
+                this.refresh(await workspace.openTextDocument(uri));
+            }));
         });
 
-        this.watcher.onDidCreate(async uri => {
-            this.refresh(await workspace.openTextDocument(uri));
+        this.watcher.onDidCreate(uri => {
+            this.runSafely('Unable to refresh created Markdown file', this.operationQueue.enqueue(async () => {
+                this.refresh(await workspace.openTextDocument(uri));
+            }));
         });
 
         this.watcher.onDidDelete(uri => {
-            if (removeFileFromCache(this.cache, uri.fsPath)) {
-                this._onDidChangeTreeData.fire(undefined);
-            }
+            this.runSafely('Unable to refresh deleted Markdown file', this.operationQueue.enqueue(() => {
+                if (removeFileFromCache(this.cache, uri.fsPath)) {
+                    this._onDidChangeTreeData.fire(undefined);
+                }
+            }));
         });
 
-        this.index();
+        void this.reindex();
     }
 
     public getTreeItem(element: Item) {
@@ -157,9 +166,12 @@ class TodoTreeDataProvider implements TreeDataProvider<Item> {
         this._onDidChangeTreeData.fire(undefined);
     }
 
-    public reindex() {
-        this.cache = [];
-        this.index();
+    public async reindex(): Promise<void> {
+        try {
+            await this.operationQueue.enqueue(() => this.index());
+        } catch (error) {
+            this.reportError('Unable to index Markdown files', error);
+        }
     }
 
     public reraise() {
@@ -178,25 +190,44 @@ class TodoTreeDataProvider implements TreeDataProvider<Item> {
             return workspace.findFiles(include, exclude);
         }));
         const files = sortFilePaths(filesByScope.flat().map(file => file.fsPath));
+        const nextCache = new Map<string, File>();
         for (const file of files) {
             const textDocument = await workspace.openTextDocument(Uri.file(file));
-            this.refresh(textDocument);
+            const parsedFile = this.parseFile(textDocument);
+            if (parsedFile !== undefined) {
+                nextCache.set(parsedFile.path, parsedFile);
+            }
         }
 
+        this.cache = [...nextCache.values()];
         this._onDidChangeTreeData.fire(undefined);
     }
 
     private refresh(textDocument: TextDocument) {
+        const file = this.parseFile(textDocument);
         const filePath = textDocument.uri.fsPath;
-        const index = this.cache.findIndex(file => file.path === filePath);
-        let file = this.cache[index] as File | undefined;
-        if (file !== undefined) {
-            file.headlessTodos = [];
-            file.heads = [];
-        } else {
-            file = { type: FileType, path: filePath, headlessTodos: [], heads: [] };
+        const index = this.cache.findIndex(cachedFile => cachedFile.path === filePath);
+
+        if (file === undefined) {
+            if (index !== -1) {
+                this.cache.splice(index, 1);
+                this._onDidChangeTreeData.fire(undefined);
+            }
+            return;
         }
 
+        if (index !== -1) {
+            this.cache[index] = file;
+            this._onDidChangeTreeData.fire(file);
+        } else {
+            this.cache.push(file);
+            // Refresh the tree to find the new file
+            this._onDidChangeTreeData.fire(undefined);
+        }
+    }
+
+    private parseFile(textDocument: TextDocument): File | undefined {
+        const file: File = { type: FileType, path: textDocument.uri.fsPath, headlessTodos: [], heads: [] };
         for (let index = 0; index < textDocument.lineCount; index++) {
             const line = textDocument.lineAt(index);
 
@@ -224,22 +255,20 @@ class TodoTreeDataProvider implements TreeDataProvider<Item> {
 
         file.heads = file.heads.filter(head => head.todos.length > 0);
 
-        if (index !== -1) {
-            // Remove file after ites last to-do item has been deleted
-            if (file.headlessTodos.length === 0 && file.heads.length === 0) {
-                this.cache.splice(index, 1);
-                this._onDidChangeTreeData.fire(undefined);
-            } else {
-                this._onDidChangeTreeData.fire(file);
-            }
-        } else {
-            // Do not include empty files
-            if (file.headlessTodos.length !== 0 || file.heads.length !== 0) {
-                this.cache.push(file);
-                // Refresh the tree to find the new file
-                this._onDidChangeTreeData.fire(undefined);
-            }
+        if (file.headlessTodos.length === 0 && file.heads.length === 0) {
+            return undefined;
         }
+
+        return file;
+    }
+
+    private runSafely(operation: string, promise: Promise<void>): void {
+        void promise.catch(error => this.reportError(operation, error));
+    }
+
+    private reportError(operation: string, error: unknown): void {
+        const message = error instanceof Error ? error.message : String(error);
+        this.outputChannel.appendLine(`${operation}: ${message}`);
     }
 
     private count(todos: Todo[]) {
@@ -255,8 +284,8 @@ class TodoTreeDataProvider implements TreeDataProvider<Item> {
     }
 
     public dispose() {
-        delete (this as any).cache; // make eslint happy
         this._onDidChangeTreeData.dispose();
         this.watcher.dispose();
+        this.outputChannel.dispose();
     }
 }
