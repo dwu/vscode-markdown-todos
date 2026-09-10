@@ -40,6 +40,12 @@
               "foreground": "#F44336",
               "fontStyle": "bold"
             }
+          },
+          {
+            "scope": "markup.underline.link.markdown",
+            "settings": {
+              "foreground": "#FFA500"
+            }
           }
         ]
       }
@@ -66,6 +72,26 @@
       {
         "command": "markdown-todos.openWithApplication",
         "title": "Open in external application..."
+      },
+      {
+        "command": "markdown-todos.toggleCheckbox",
+        "title": "Toggle Markdown checkbox"
+      },
+      {
+        "command": "markdown-todos.openFileReference",
+        "title": "Open Markdown file reference"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "markdown-todos.toggleCheckbox",
+        "key": "alt+c",
+        "when": "editorTextFocus && editorLangId == markdown"
+      },
+      {
+        "command": "markdown-todos.openFileReference",
+        "key": "alt+o",
+        "when": "editorTextFocus && editorLangId == markdown"
       }
     ],
     "viewsContainers": {
@@ -124,6 +150,18 @@
           "group": "1"
         }
       ],
+      "editor/context": [
+        {
+          "command": "markdown-todos.openInApplication",
+          "group": "navigation@1",
+          "when": "editorLangId == markdown && markdown-todos.fileLink"
+        },
+        {
+          "command": "markdown-todos.openWithApplication",
+          "group": "navigation@2",
+          "when": "editorLangId == markdown && markdown-todos.fileLink"
+        }
+      ],
       "view/item/context": [
         {
           "command": "markdown-todos.openInApplication",
@@ -163,7 +201,7 @@
     "package": "webpack --mode production --devtool hidden-source-map",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
-    "test:unit": "npm run compile-tests && mocha --ui tdd out/test/cache.test.js out/test/indexing.test.js out/test/asyncQueue.test.js out/test/parser.test.js out/test/treeItems.test.js out/test/launcher.test.js out/test/process.test.js",
+    "test:unit": "npm run compile-tests && mocha --ui tdd out/test/cache.test.js out/test/indexing.test.js out/test/asyncQueue.test.js out/test/parser.test.js out/test/treeItems.test.js out/test/launcher.test.js out/test/process.test.js out/test/editorCommands.test.js",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "vscode-test"

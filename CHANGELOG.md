@@ -2,6 +2,8 @@
 
 ## 0.2.0
 
+- Add `Alt+C` checkbox toggling and external opening of `<...>` file links via `Alt+O` or the editor context menu
+- Highlight `<...>` file links
 - Add a command to open files with their default application
 - Add configurable launchers by file extension and one-shot launcher selection
 - Support `%p` and `%f` path templates in launcher command strings

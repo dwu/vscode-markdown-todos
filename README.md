@@ -12,6 +12,10 @@ The tree updates when Markdown files are created, saved, or deleted. Unsaved edi
 
 `Open in external application` is available from the Command Palette, Explorer and editor context menus, and file items in either view. `Open with Application...` prompts for a launcher command for one use.
 
+When editing a Markdown file, use `Alt+C` to toggle the checkbox on the current task-list line. Use `Alt+O` to open the first file name enclosed in `<...>` on the current line with the configured external application or platform default opener. Relative file names are resolved from the current Markdown file; references such as `[notes](<docs/my notes.md>)` are supported.
+
+The same external-launch actions are available from the Markdown editor context menu when the current line contains a file link.
+
 ## Task syntax
 
 The parser recognizes an optional indentation followed by one of these bullets and checkbox markers:

@@ -1,5 +1,7 @@
 'use strict';
 import { ExtensionContext, Uri, commands, window, workspace } from 'vscode';
+import * as path from 'path';
+import { getAngleBracketFileName, resolveRelativeFileReference } from './editorCommandUtils';
 import { getOpenFilePath as resolveOpenFilePath, isApplicationTemplate, parseApplicationTemplate, resolveConfiguredApplication } from './launcher';
 import { launchProcess } from './process';
 
@@ -42,7 +44,21 @@ async function openFile(target: unknown, applicationForFile: (filePath: string) 
 }
 
 function getOpenFilePath(target?: unknown): string | undefined {
-    return resolveOpenFilePath(target, window.activeTextEditor?.document.uri);
+    const activeEditor = window.activeTextEditor;
+    const activeDocumentPath = activeEditor?.document.uri.scheme === 'file' ? activeEditor.document.uri.fsPath : undefined;
+    const targetPath = resolveOpenFilePath(target, activeEditor?.document.uri);
+    if (target !== undefined && activeEditor?.document.languageId === 'markdown' && activeDocumentPath !== undefined &&
+        targetPath === activeDocumentPath) {
+        const fileName = getAngleBracketFileName(activeEditor.document.lineAt(activeEditor.selection.active.line).text);
+        if (fileName !== undefined && !isUriReference(fileName)) {
+            return resolveRelativeFileReference(fileName, activeDocumentPath);
+        }
+    }
+    return targetPath;
+}
+
+function isUriReference(fileName: string): boolean {
+    return /^[a-z][a-z\d+.-]*:/i.test(fileName) && !/^[a-zA-Z]:[\\/]/.test(fileName);
 }
 
 function getConfiguredApplication(filePath: string): string | undefined {

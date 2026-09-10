@@ -17,6 +17,10 @@
           "name": "markup.taskList.unchecked.markdown"
         }
       }
+    },
+    {
+      "match": "<[^<>\\r\\n]+>",
+      "name": "markup.underline.link.markdown"
     }
   ]
 }
