@@ -1,6 +1,6 @@
 {
   "scopeName": "markdown-todos.checkbox",
-  "injectionSelector": "L:text.html.markdown",
+  "injectionSelector": "L:text.html.markdown - markup.fenced_code.block.markdown",
   "patterns": [
     {
       "match": "^\\s*[-*+]\\s+(\\[(?:x|X)\\])(?=\\s|$)",

@@ -2,6 +2,22 @@ import * as assert from 'assert';
 import { parseMarkdownDocument } from '../parser';
 
 suite('Markdown parser', () => {
+    test('only closes fences with a matching marker, sufficient length and no trailing text', () => {
+        for (const marker of ['`', '~']) {
+            const parsed = parseMarkdownDocument([
+                marker.repeat(4), marker.repeat(3), '- [ ] hidden short',
+                marker.repeat(4) + 'text', '- [ ] hidden trailing text',
+                (marker === '`' ? '~' : '`').repeat(4), '- [ ] hidden wrong marker',
+                marker.repeat(5) + ' \t', '- [ ] visible'
+            ].join('\n'));
+            assert.deepStrictEqual(parsed.headlessTodos.map(todo => todo.text), ['visible']);
+        }
+    });
+
+    test('backticks in the info string do not open a fence', () => {
+        assert.strictEqual(parseMarkdownDocument('```invalid`info\n- [ ] visible').headlessTodos.length, 1);
+    });
+
     test('parses supported task forms', () => {
         const parsed = parseMarkdownDocument([
             '- [ ] dash task',

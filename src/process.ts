@@ -1,4 +1,4 @@
-import { ChildProcess, spawn, SpawnOptions } from 'child_process';
+import { ChildProcess, spawn } from 'child_process';
 
 const MAX_OUTPUT_LENGTH = 32 * 1024;
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -105,7 +105,13 @@ function launchWithDiagnostics(
                 failure(`${command} exited with ${status}`);
             }
         });
-        timeout = setTimeout(() => failure(`${command} did not exit within ${timeoutMs} ms`), timeoutMs);
+        timeout = setTimeout(() => {
+            // Release extension-host resources without terminating the user's application.
+            child.stdout?.destroy();
+            child.stderr?.destroy();
+            child.unref();
+            failure(`${command} did not exit within ${timeoutMs} ms`);
+        }, timeoutMs);
     });
 }
 

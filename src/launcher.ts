@@ -3,7 +3,7 @@ import * as path from 'path';
 type FileUriLike = { scheme?: unknown; fsPath?: unknown };
 
 export function getOpenFilePath(target?: unknown, activeTarget?: unknown): string | undefined {
-    return getPathFromTarget(target) ?? getPathFromTarget(activeTarget);
+    return getPathFromTarget(target === undefined ? activeTarget : target);
 }
 
 export function getPathFromTarget(target: unknown): string | undefined {
@@ -12,6 +12,9 @@ export function getPathFromTarget(target: unknown): string | undefined {
     }
 
     const candidate = target as { path?: unknown; fsPath?: unknown; resourceUri?: unknown; scheme?: unknown };
+    if (candidate.scheme !== undefined && candidate.scheme !== 'file') {
+        return undefined;
+    }
     if (candidate.scheme === 'file' && typeof candidate.fsPath === 'string') {
         return candidate.fsPath;
     }
@@ -58,7 +61,7 @@ export function parseApplicationTemplate(template: string, filePath: string): { 
     }
 
     const folderPath = path.dirname(filePath);
-    const substitute = (value: string) => value.replace(/%p/g, folderPath).replace(/%f/g, filePath);
+    const substitute = (value: string) => value.replace(/%[pf]/g, placeholder => placeholder === '%p' ? folderPath : filePath);
     const [command, ...args] = tokens.map(substitute);
     return { command, args };
 }

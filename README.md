@@ -29,6 +29,8 @@ Only ` `, `x`, and `X` are valid checkbox characters. The task marker must start
 
 Indexing uses the `search.exclude` setting for each workspace folder. Entries set to `true` are excluded, while entries set to `false` remain searchable. With no exclusions, all `*.md` files under every workspace folder are scanned. In a multi-root workspace, each root uses its own folder-scoped configuration.
 
+The same exclusions apply to file-watcher updates. `files.exclude` and conditional exclusion objects are not applied. Run `Refresh` after changing exclusion settings.
+
 ## External launchers
 
 The default command uses the operating system opener when no launcher is configured: `open` on macOS, `explorer.exe` on Windows, and `xdg-open` on Linux. These launches return as soon as the opener starts.

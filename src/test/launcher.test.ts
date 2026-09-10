@@ -6,6 +6,10 @@ suite('Launcher configuration', () => {
         assert.strictEqual(getOpenFilePath({ path: '/workspace/tasks.md' }, { scheme: 'file', fsPath: '/workspace/active.md' }), '/workspace/tasks.md');
         assert.strictEqual(getOpenFilePath(undefined, { scheme: 'file', fsPath: '/workspace/active.md' }), '/workspace/active.md');
         assert.strictEqual(getPathFromTarget({ resourceUri: { scheme: 'untitled', fsPath: '/workspace/nope.md' } }), undefined);
+        assert.strictEqual(getPathFromTarget({ scheme: 'untitled', fsPath: '/workspace/nope.md', path: '/workspace/nope.md' }), undefined);
+        assert.strictEqual(getPathFromTarget({ scheme: 'vscode-remote', fsPath: '/remote/tasks.md' }), undefined);
+        assert.strictEqual(getOpenFilePath({ scheme: 'untitled', fsPath: '/unsaved.md' },
+            { scheme: 'file', fsPath: '/workspace/active.md' }), undefined);
     });
 
     test('resolves extension and fallback launcher settings', () => {
@@ -26,5 +30,12 @@ suite('Launcher configuration', () => {
 
     test('rejects an unterminated launcher quote', () => {
         assert.throws(() => tokenizeCommand('editor "unfinished'), /unterminated quote/);
+    });
+
+    test('substitutes paths literally without interpreting dollar signs or nested placeholders', () => {
+        const filePath = '/workspace/%f/$&-%p.md';
+        assert.deepStrictEqual(parseApplicationTemplate('editor %p %f', filePath), {
+            command: 'editor', args: ['/workspace/%f', filePath]
+        });
     });
 });

@@ -46,7 +46,7 @@ function getOpenFilePath(target?: unknown): string | undefined {
 }
 
 function getConfiguredApplication(filePath: string): string | undefined {
-    const applications = workspace.getConfiguration(applicationsConfiguration).get<unknown>('applications');
+    const applications = workspace.getConfiguration(applicationsConfiguration, Uri.file(filePath)).get<unknown>('applications');
     return resolveConfiguredApplication(applications, filePath);
 }
 

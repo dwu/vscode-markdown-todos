@@ -18,7 +18,7 @@ export type ParsedDocument = {
 
 const headingPattern = /^(#+)\s+(.*)$/;
 const taskPattern = /^(\s*)[-*+]\s+\[([ xX])\](?:\s+(.*))?$/;
-const fencePattern = /^\s{0,3}(`{3,}|~{3,})/;
+const fencePattern = /^ {0,3}(`{3,}|~{3,})(.*)$/;
 
 export function parseMarkdownDocument(text: string): ParsedDocument {
     const headlessTodos: ParsedTodo[] = [];
@@ -30,8 +30,9 @@ export function parseMarkdownDocument(text: string): ParsedDocument {
         if (fenceMatch !== null) {
             const marker = fenceMatch[1][0] as '`' | '~';
             if (activeFence === undefined) {
+                if (marker === '`' && fenceMatch[2].includes('`')) { continue; }
                 activeFence = { marker, length: fenceMatch[1].length };
-            } else if (activeFence.marker === marker && fenceMatch[1].length >= activeFence.length) {
+            } else if (activeFence.marker === marker && fenceMatch[1].length >= activeFence.length && /^[ \t]*$/.test(fenceMatch[2])) {
                 activeFence = undefined;
             }
             continue;

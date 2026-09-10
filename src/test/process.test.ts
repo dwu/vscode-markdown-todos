@@ -2,13 +2,14 @@ import * as assert from 'assert';
 import { EventEmitter } from 'events';
 import { ChildProcess } from 'child_process';
 import { launchProcess } from '../process';
+import { PassThrough } from 'stream';
 
 function fakeChild(withOutput = false): ChildProcess & { emit: EventEmitter['emit'] } {
     const child = new EventEmitter() as ChildProcess & { emit: EventEmitter['emit'] };
     child.unref = () => child;
     if (withOutput) {
-        child.stdout = new EventEmitter() as ChildProcess['stdout'];
-        child.stderr = new EventEmitter() as ChildProcess['stderr'];
+        child.stdout = new PassThrough();
+        child.stderr = new PassThrough();
     }
     return child;
 }
@@ -43,6 +44,8 @@ suite('Launcher process lifecycle', () => {
 
     test('diagnostic launch caps output and rejects when the process times out', async () => {
         const child = fakeChild(true);
+        let unreferenced = false;
+        child.unref = () => { unreferenced = true; };
         const spawnProcess = ((_: string, __: string[]) => {
             process.nextTick(() => {
                 child.stdout?.emit('data', 'a'.repeat(40_000));
@@ -58,5 +61,8 @@ suite('Launcher process lifecycle', () => {
                 !error.message.includes('a'.repeat(32_769)) &&
                 error.message.includes('stderr:\ndiagnostic')
         );
+        assert.ok(child.stdout?.destroyed);
+        assert.ok(child.stderr?.destroyed);
+        assert.ok(unreferenced);
     });
 });

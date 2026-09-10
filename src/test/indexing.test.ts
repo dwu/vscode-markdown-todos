@@ -2,6 +2,14 @@ import * as assert from 'assert';
 import { createMarkdownSearchScopes } from '../indexing';
 
 suite('Markdown indexing configuration', () => {
+    test('handles absent settings and no workspace', () => {
+        for (const exclude of [undefined, null, false, []]) {
+            assert.deepStrictEqual(createMarkdownSearchScopes([{ path: '/workspace' }], () => exclude),
+                [{ rootPath: '/workspace' }]);
+        }
+        assert.deepStrictEqual(createMarkdownSearchScopes([], () => assert.fail('No root configuration should be read')), []);
+    });
+
     test('handles an empty exclusion object', () => {
         const scopes = createMarkdownSearchScopes(
             [{ path: '/workspace' }],
